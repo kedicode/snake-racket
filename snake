@@ -1,0 +1,84 @@
+;; The first three lines of this file were inserted by DrRacket. They record metadata
+;; about the language level of this file in a form that our tools can easily process.
+#reader(lib "htdp-beginner-abbr-reader.ss" "lang")((modname snake) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #f)))
+(require 2htdp/image)
+(require 2htdp/universe)
+;; lets build a snake grid that that snake will travel through
+;; Game Constants
+(define SIZE 600)
+(define GRID-PIECE (/ SIZE 20))
+(define SNAKE-PIECE (circle (/ GRID-PIECE 2) "solid" "red"))
+
+; Row
+(define (row n)
+  (cond
+    [(zero? n) empty-image]
+    [else
+     (beside (square GRID-PIECE "outline" "green")
+             (row (sub1 n)))]))
+
+; Column
+(define (grid n r)
+  (cond
+    [(zero? n) empty-image]
+    [else
+     (above (row r)
+            (grid (sub1 n) r))]))
+
+(define SCENE (place-image (grid GRID-PIECE GRID-PIECE) (/ SIZE 2) (/ SIZE 2) (empty-scene SIZE SIZE)))
+
+;; Create the world
+
+;; data definitions
+
+;;Direction is an itemization
+;; - "up"
+;; - "down"
+;; - "left"
+;; - "right"
+
+;; A Snake-Piece is structure
+(define-struct snake [pos direction])
+;; (make-snake Posn Direction) is a snake peice and the direction
+
+;; A Snake is one of
+;; - (cons Snake-Piece '())
+;; - (cons Snake Snake-Piece)
+(define SNAKE1 (cons (make-snake (make-posn 150 150) "right") '()))
+(define SNAKE2 (cons (make-snake (make-posn 150 150) "right")
+                     (cons (make-snake (make-posn 165 150) "right") '())))
+
+
+;; Big Bang stuff
+;; a WordState is a Snake
+(define (main snake)
+  (big-bang snake
+    [on-tick move-snake]
+    [to-draw render-snake]))
+
+;; Given a Snake move it in world
+;;!!!
+(define (render-snake snake) SCENE)
+
+;; Place snake in the given game grid
+(check-expect (move-snake '()) '())
+(check-expect (move-snake (list (make-snake (make-posn 0 0) "right"))) (list (make-snake (make-posn (+ GRID-PIECE 0) 0) "right"))) ;Moving right
+(check-expect (move-snake (list (make-snake (make-posn 150 150) "up"))) (list (make-snake (make-posn 150 (- 150 GRID-PIECE)) "up"))) ;Moving up
+
+;(define (move-snake snake) '())
+(define (move-snake snake)
+  (cond
+    [(empty? snake) '()]
+    [else
+     (cons (move-segment (first snake))
+           (move-snake (rest snake)))]))
+
+;; segment -> segment
+;; move segment in space in direction
+;; Assumption. not worrying about walls
+(check-expect (move-segment (make-snake (make-posn 150 150) "up")) (make-snake (make-posn 150 (- 150 GRID-PIECE)) "up")) ; Moving up
+(check-expect (move-segment (make-snake (make-posn 150 150) "down")) (make-snake (make-posn 150 (+ 150 GRID-PIECE)) "down")) ; Moving down
+(check-expect (move-segment (make-snake (make-posn 150 150) "left")) (make-snake (make-posn (- 150 GRID-PIECE) 150) "left")) ; Moving left
+(check-expect (move-segment (make-snake (make-posn 150 150) "right")) (make-snake (make-posn (+ 150 GRID-PIECE) 150) "right")) ; Moving right
+
+(define (move-segment seg) seg)
