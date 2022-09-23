@@ -81,4 +81,18 @@
 (check-expect (move-segment (make-snake (make-posn 150 150) "left")) (make-snake (make-posn (- 150 GRID-PIECE) 150) "left")) ; Moving left
 (check-expect (move-segment (make-snake (make-posn 150 150) "right")) (make-snake (make-posn (+ 150 GRID-PIECE) 150) "right")) ; Moving right
 
-(define (move-segment seg) seg)
+;(define (move-segment seg) seg)
+(define (move-segment seg)
+  (cond
+    [(equal? "up" (snake-direction seg))
+     (make-snake (make-posn (posn-x (snake-pos seg))
+                            (- (posn-y (snake-pos seg)) GRID-PIECE)) "up")]
+    [(equal? "down" (snake-direction seg))
+     (make-snake (make-posn (posn-x (snake-pos seg))
+                            (+ (posn-y (snake-pos seg)) GRID-PIECE)) "down")]
+    [(equal? "right" (snake-direction seg))
+     (make-snake (make-posn (+ (posn-x (snake-pos seg)) GRID-PIECE)
+                            (posn-y (snake-pos seg))) "right")]
+    [else
+     (make-snake (make-posn (- (posn-x (snake-pos seg)) GRID-PIECE)
+                            (posn-y (snake-pos seg))) "left")]))
