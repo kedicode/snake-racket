@@ -7,6 +7,7 @@
 ;; Game Constants
 (define SIZE 600)
 (define GRID-PIECE (/ SIZE 20))
+(define SPEED 1)
 (define SNAKE-PIECE (circle (/ GRID-PIECE 2) "solid" "red"))
 
 ; Row
@@ -28,7 +29,7 @@
 (define SCENE (place-image (grid GRID-PIECE GRID-PIECE) (/ SIZE 2) (/ SIZE 2) (empty-scene SIZE SIZE)))
 
 ;; Create the world
-
+;; World includes a grid of grass
 ;; data definitions
 
 ;;Direction is an itemization
@@ -40,30 +41,58 @@
 ;; A Snake-Piece is structure
 (define-struct snake [pos direction])
 ;; (make-snake Posn Direction) is a snake peice and the direction
+;; snake pos is scaled to grid-piece size for movement with offset
 
 ;; A Snake is one of
 ;; - (cons Snake-Piece '())
 ;; - (cons Snake Snake-Piece)
-(define SNAKE1 (cons (make-snake (make-posn 150 150) "right") '()))
-(define SNAKE2 (cons (make-snake (make-posn 150 150) "right")
-                     (cons (make-snake (make-posn 165 150) "right") '())))
+(define SNAKE1 (cons (make-snake (make-posn 7 7) "right") '()))
+(define SNAKE2 (cons (make-snake (make-posn 7 7) "right")
+                     (cons (make-snake (make-posn 8 7) "right") '())))
 
 
 ;; Big Bang stuff
 ;; a WordState is a Snake
 (define (main snake)
   (big-bang snake
-    [on-tick move-snake]
+    [on-tick move-snake 1]
     [to-draw render-snake]))
 
 ;; Given a Snake move it in world
-;;!!!
-(define (render-snake snake) SCENE)
+;; Need to figure out how to make sure snake is moving a grid per clock speed
+(check-expect (render-snake (cons (make-snake (make-posn 0 0) "right") '())) (place-image SNAKE-PIECE
+                                                                                          (+ (* 0 GRID-PIECE) (/ GRID-PIECE 2))
+                                                                                          (+ (* 0 GRID-PIECE) (/ GRID-PIECE 2))
+                                                                                          SCENE))
+(check-expect (render-snake (cons (make-snake (make-posn 0 7) "down")
+                                  (cons (make-snake (make-posn 0 8) "down") '()))) (place-image SNAKE-PIECE
+                                                                                        (+ (* 0 GRID-PIECE) (/ GRID-PIECE 2))
+                                                                                        (+ (* 7 GRID-PIECE) (/ GRID-PIECE 2))
+                                                                                        (place-image SNAKE-PIECE
+                                                                                                     (+ (* 0 GRID-PIECE) (/ GRID-PIECE 2))
+                                                                                                     (+ (* 8 GRID-PIECE) (/ GRID-PIECE 2)) SCENE)))
+;(define (render-snake snake) SCENE)
+(define (render-snake snake)
+  (cond
+    [(empty? (rest snake))
+     (place-image SNAKE-PIECE
+                  (+ (* (posn-x (snake-pos (first snake))) GRID-PIECE)
+                     (/ GRID-PIECE 2))
+                  (+ (* (posn-y (snake-pos (first snake))) GRID-PIECE)
+                     (/ GRID-PIECE 2))
+                  SCENE)]
+    [else
+     (place-image SNAKE-PIECE
+                  (+ (* (posn-x (snake-pos (first snake))) GRID-PIECE)
+                     (/ GRID-PIECE 2))
+                  (+ (* (posn-y (snake-pos (first snake))) GRID-PIECE)
+                     (/ GRID-PIECE 2))
+                  (render-snake (rest snake)))]))
 
 ;; Place snake in the given game grid
 (check-expect (move-snake '()) '())
-(check-expect (move-snake (list (make-snake (make-posn 0 0) "right"))) (list (make-snake (make-posn (+ GRID-PIECE 0) 0) "right"))) ;Moving right
-(check-expect (move-snake (list (make-snake (make-posn 150 150) "up"))) (list (make-snake (make-posn 150 (- 150 GRID-PIECE)) "up"))) ;Moving up
+(check-expect (move-snake (list (make-snake (make-posn 0 0) "right"))) (list (make-snake (make-posn (+ SPEED 0) 0) "right"))) ;Moving right
+(check-expect (move-snake (list (make-snake (make-posn 3 4) "up"))) (list (make-snake (make-posn 3 (- 4 SPEED)) "up"))) ;Moving up
 
 ;(define (move-snake snake) '())
 (define (move-snake snake)
@@ -76,23 +105,23 @@
 ;; segment -> segment
 ;; move segment in space in direction
 ;; Assumption. not worrying about walls
-(check-expect (move-segment (make-snake (make-posn 150 150) "up")) (make-snake (make-posn 150 (- 150 GRID-PIECE)) "up")) ; Moving up
-(check-expect (move-segment (make-snake (make-posn 150 150) "down")) (make-snake (make-posn 150 (+ 150 GRID-PIECE)) "down")) ; Moving down
-(check-expect (move-segment (make-snake (make-posn 150 150) "left")) (make-snake (make-posn (- 150 GRID-PIECE) 150) "left")) ; Moving left
-(check-expect (move-segment (make-snake (make-posn 150 150) "right")) (make-snake (make-posn (+ 150 GRID-PIECE) 150) "right")) ; Moving right
+(check-expect (move-segment (make-snake (make-posn 7 7) "up")) (make-snake (make-posn 7 6) "up")) ; Moving up
+(check-expect (move-segment (make-snake (make-posn 7 7) "down")) (make-snake (make-posn 7 (+ 7 SPEED)) "down")) ; Moving down
+(check-expect (move-segment (make-snake (make-posn 7 7) "left")) (make-snake (make-posn (- 7 SPEED) 7) "left")) ; Moving left
+(check-expect (move-segment (make-snake (make-posn 7 7) "right")) (make-snake (make-posn (+ 7 SPEED) 7) "right")) ; Moving right
 
 ;(define (move-segment seg) seg)
 (define (move-segment seg)
   (cond
     [(equal? "up" (snake-direction seg))
      (make-snake (make-posn (posn-x (snake-pos seg))
-                            (- (posn-y (snake-pos seg)) GRID-PIECE)) "up")]
+                            (- (posn-y (snake-pos seg)) SPEED)) "up")]
     [(equal? "down" (snake-direction seg))
      (make-snake (make-posn (posn-x (snake-pos seg))
-                            (+ (posn-y (snake-pos seg)) GRID-PIECE)) "down")]
+                            (+ (posn-y (snake-pos seg)) SPEED)) "down")]
     [(equal? "right" (snake-direction seg))
-     (make-snake (make-posn (+ (posn-x (snake-pos seg)) GRID-PIECE)
+     (make-snake (make-posn (+ (posn-x (snake-pos seg)) SPEED)
                             (posn-y (snake-pos seg))) "right")]
     [else
-     (make-snake (make-posn (- (posn-x (snake-pos seg)) GRID-PIECE)
+     (make-snake (make-posn (- (posn-x (snake-pos seg)) SPEED)
                             (posn-y (snake-pos seg))) "left")]))
