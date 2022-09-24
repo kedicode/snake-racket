@@ -52,16 +52,40 @@
 
 ;; Big Bang stuff
 ;; a WordState is a Snake
-(define (main snake)
+(define (main snake vel)
   (big-bang snake
-    [on-tick move-snake .5]
+    [on-tick move-snake vel]
     [to-draw render-snake]
     [on-key handle-key]))
 
 
 ;; Handle the four directions for keys
-;; !!!
-(define (handle-key snake ke) snake)
+(check-expect (handle-key SNAKE1 "up") (cons (make-snake (make-posn 7 7) "up") '()))
+(check-expect (handle-key SNAKE1 "right") (cons (make-snake (make-posn 7 7) "right") '()))
+(check-expect (handle-key SNAKE1 "left") (cons (make-snake (make-posn 7 7) "left") '()))
+(check-expect (handle-key SNAKE1 "right") (cons (make-snake (make-posn 7 7) "right") '()))
+
+;(define (handle-key snake ke) snake)
+(define (handle-key snake ke)
+  (cond
+    [(key=? ke "up")
+     (cons (make-snake (make-posn (posn-x (snake-pos (first snake)))
+                            (posn-y (snake-pos (first snake))))
+                            "up") (rest snake))]
+    [(key=? ke "down")
+     (cons (make-snake (make-posn (posn-x (snake-pos (first snake)))
+                            (posn-y (snake-pos (first snake))))
+                            "down") (rest snake))]
+    [(key=? ke "left")
+     (cons (make-snake (make-posn (posn-x (snake-pos (first snake)))
+                            (posn-y (snake-pos (first snake))))
+                            "left") (rest snake))]
+    [(key=? ke "right")
+     (cons (make-snake (make-posn (posn-x (snake-pos (first snake)))
+                           (posn-y (snake-pos (first snake))))
+                           "right") (rest snake))]
+    [else
+     snake]))
 ;; Given a Snake move it in world
 ;; Need to figure out how to make sure snake is moving a grid per clock speed
 (check-expect (render-snake (cons (make-snake (make-posn 0 0) "right") '())) (place-image SNAKE-PIECE
