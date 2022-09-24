@@ -56,8 +56,19 @@
   (big-bang snake
     [on-tick move-snake vel]
     [to-draw render-snake]
-    [on-key handle-key]))
+    [on-key handle-key]
+    [stop-when collide-snake? game-over]))
 
+
+;; Snake -> Boolean
+;; Return true is the snake has collided into the walls or itself(future)
+;; !!!
+(define (collide-snake? snake) #f)
+
+;; Snake -> Image
+;; Produce the last image for the game
+;; !!!
+(define (game-over snake) empty-image)
 
 ;; Handle the four directions for keys
 (check-expect (handle-key SNAKE1 "up") (cons (make-snake (make-posn 7 7) "up") '()))
