@@ -50,14 +50,18 @@
 (define SNAKE2 (cons (make-snake (make-posn 7 7) "right")
                      (cons (make-snake (make-posn 8 7) "right") '())))
 
-
 ;; Big Bang stuff
 ;; a WordState is a Snake
 (define (main snake)
   (big-bang snake
-    [on-tick move-snake 1]
-    [to-draw render-snake]))
+    [on-tick move-snake .5]
+    [to-draw render-snake]
+    [on-key handle-key]))
 
+
+;; Handle the four directions for keys
+;; !!!
+(define (handle-key snake ke) snake)
 ;; Given a Snake move it in world
 ;; Need to figure out how to make sure snake is moving a grid per clock speed
 (check-expect (render-snake (cons (make-snake (make-posn 0 0) "right") '())) (place-image SNAKE-PIECE
