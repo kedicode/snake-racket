@@ -77,15 +77,23 @@
 
 ;(define (collide-snake? snake) #f)
 (define (collide-snake? snake)
-  (or (> (posn-x (snake-pos (first snake))) (/ SIZE GRID-PIECE))
-      (> (posn-y (snake-pos (first snake))) (/ SIZE GRID-PIECE))
-      (< (posn-x (snake-pos (first snake))) 0)
-      (< (posn-y (snake-pos (first snake))) 0)))
+  (or (> (posn-x (snake-pos (first snake))) (- (/ SIZE GRID-PIECE) 1)) ;Fail
+      (> (posn-y (snake-pos (first snake))) (- (/ SIZE GRID-PIECE) 1)) ;Fail
+      (< (posn-x (snake-pos (first snake))) 0) ;Success
+      (< (posn-y (snake-pos (first snake))) 0))) ;Success
 
 ;; Snake -> Image
 ;; Produce the last image for the game
-;; !!!
-(define (game-over snake) empty-image)
+(check-expect (game-over SNAKE1) (overlay/align
+                                  "left" "bottom"
+                                  (text "Oops, Snake Hit Border!!!" GRID-PIECE "blue")
+                                  (render-snake SNAKE1)))
+;(define (game-over snake) empty-image)
+(define (game-over snake)
+  (overlay/align
+   "left" "bottom"
+   (text "Oops, Snake Hit Border!!!" GRID-PIECE "blue")
+   (render-snake snake)))
 
 ;; Handle the four directions for keys
 (check-expect (handle-key SNAKE1 "up") (cons (make-snake (make-posn 7 7) "up") '()))
