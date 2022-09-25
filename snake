@@ -57,13 +57,30 @@
     [on-tick move-snake vel]
     [to-draw render-snake]
     [on-key handle-key]
-    [stop-when collide-snake? game-over]))
+    [stop-when collide-snake? game-over]
+    [state #t]))
 
 
 ;; Snake -> Boolean
 ;; Return true is the snake has collided into the walls or itself(future)
-;; !!!
-(define (collide-snake? snake) #f)
+(check-expect (collide-snake? (cons (make-snake (make-posn (/ SIZE GRID-PIECE) 0) "right") '())) #f)
+(check-expect (collide-snake? (cons (make-snake
+                                     (make-posn
+                                      (+ (/ SIZE GRID-PIECE) 1) 0)
+                                     "right") '())) #t)
+(check-expect (collide-snake? (cons (make-snake (make-posn 0 0) "left") '())) #f)
+(check-expect (collide-snake? (cons (make-snake (make-posn -1 0) "left") '())) #t)
+(check-expect (collide-snake? (cons (make-snake (make-posn 0 0) "up") '())) #f)
+(check-expect (collide-snake? (cons (make-snake (make-posn 0 -1) "up") '())) #t)
+(check-expect (collide-snake? (cons (make-snake (make-posn 0 (/ SIZE GRID-PIECE)) "down") '())) #f)
+(check-expect (collide-snake? (cons (make-snake (make-posn 0 (+ 1 GRID-PIECE)) "down") '())) #t)
+
+;(define (collide-snake? snake) #f)
+(define (collide-snake? snake)
+  (or (> (posn-x (snake-pos (first snake))) (/ SIZE GRID-PIECE))
+      (> (posn-y (snake-pos (first snake))) (/ SIZE GRID-PIECE))
+      (< (posn-x (snake-pos (first snake))) 0)
+      (< (posn-y (snake-pos (first snake))) 0)))
 
 ;; Snake -> Image
 ;; Produce the last image for the game
