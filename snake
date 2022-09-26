@@ -44,11 +44,18 @@
 ;; snake pos is scaled to grid-piece size for movement with offset
 
 ;; A Snake is one of
-;; - (cons Snake-Piece '())
+;; -  (cons Snake-Piece '())
 ;; - (cons Snake Snake-Piece)
 (define SNAKE1 (cons (make-snake (make-posn 7 7) "right") '()))
-(define SNAKE2 (cons (make-snake (make-posn 7 7) "right")
-                     (cons (make-snake (make-posn 8 7) "right") '())))
+(define SNAKE2 (cons (make-snake (make-posn 8 7) "right")
+                     (cons (make-snake (make-posn 7 7) "right") '())))
+
+(define SNAKE3 (list (make-snake (make-posn 8 7) "right")
+                     (make-snake (make-posn 7 7) "right")
+                     (make-snake (make-posn 6 7) "right")
+                     (make-snake (make-posn 5 7) "right")
+                     (make-snake (make-posn 4 7) "right")
+                     (make-snake (make-posn 3 7) "right")))
 
 ;; Big Bang stuff
 ;; a WordState is a Snake
@@ -56,14 +63,51 @@
   (big-bang snake
     [on-tick move-snake vel]
     [to-draw render-snake]
-    [on-key handle-key]))
+    [on-key handle-key]
+    [stop-when collide-snake? game-over]
+    [state #t]))
 
+
+;; Snake -> Boolean
+;; Return true is the snake has collided into the walls or itself(future)
+(check-expect (collide-snake? (cons (make-snake (make-posn (- (/ SIZE GRID-PIECE) 1) 0) "right") '())) #f)
+(check-expect (collide-snake? (cons (make-snake
+                                     (make-posn
+                                      (+ (/ SIZE GRID-PIECE) 1) 0)
+                                     "right") '())) #t)
+(check-expect (collide-snake? (cons (make-snake (make-posn 0 0) "left") '())) #f)
+(check-expect (collide-snake? (cons (make-snake (make-posn -1 0) "left") '())) #t)
+(check-expect (collide-snake? (cons (make-snake (make-posn 0 0) "up") '())) #f)
+(check-expect (collide-snake? (cons (make-snake (make-posn 0 -1) "up") '())) #t)
+(check-expect (collide-snake? (cons (make-snake (make-posn 0 (- (/ SIZE GRID-PIECE) 1)) "down") '())) #f)
+(check-expect (collide-snake? (cons (make-snake (make-posn 0 (+ 1 GRID-PIECE)) "down") '())) #t)
+
+;(define (collide-snake? snake) #f)
+(define (collide-snake? snake)
+  (or (> (posn-x (snake-pos (first snake))) (- (/ SIZE GRID-PIECE) 1)) ;Fail
+      (> (posn-y (snake-pos (first snake))) (- (/ SIZE GRID-PIECE) 1)) ;Fail
+      (< (posn-x (snake-pos (first snake))) 0) ;Success
+      (< (posn-y (snake-pos (first snake))) 0))) ;Success
+
+;; Snake -> Image
+;; Produce the last image for the game
+(check-expect (game-over SNAKE1) (overlay/align
+                                  "left" "bottom"
+                                  (text "Oops, Snake Hit Border!!!" GRID-PIECE "blue")
+                                  (render-snake SNAKE1)))
+;(define (game-over snake) empty-image)
+(define (game-over snake)
+  (overlay/align
+   "left" "bottom"
+   (text "Oops, Snake Hit Border!!!" GRID-PIECE "blue")
+   (render-snake snake)))
 
 ;; Handle the four directions for keys
 (check-expect (handle-key SNAKE1 "up") (cons (make-snake (make-posn 7 7) "up") '()))
 (check-expect (handle-key SNAKE1 "right") (cons (make-snake (make-posn 7 7) "right") '()))
 (check-expect (handle-key SNAKE1 "left") (cons (make-snake (make-posn 7 7) "left") '()))
-(check-expect (handle-key SNAKE1 "right") (cons (make-snake (make-posn 7 7) "right") '()))
+(check-expect (handle-key SNAKE1 "down") (cons (make-snake (make-posn 7 7) "down") '()))
+(check-expect (handle-key SNAKE1 "k") (cons (make-snake (make-posn 7 7) "right") '()))
 
 ;(define (handle-key snake ke) snake)
 (define (handle-key snake ke)
@@ -118,18 +162,57 @@
                   (render-snake (rest snake)))]))
 
 ;; Place snake in the given game grid
-(check-expect (move-snake '()) '())
 (check-expect (move-snake (list (make-snake (make-posn 0 0) "right"))) (list (make-snake (make-posn (+ SPEED 0) 0) "right"))) ;Moving right
 (check-expect (move-snake (list (make-snake (make-posn 3 4) "up"))) (list (make-snake (make-posn 3 (- 4 SPEED)) "up"))) ;Moving up
+(check-expect (move-snake (list (make-snake (make-posn 6 4) "right")
+                                (make-snake (make-posn 5 4) "right")
+                                (make-snake (make-posn 4 4) "right")))
+              (list (make-snake (make-posn 7 4) "right")
+                    (make-snake (make-posn 6 4) "right")
+                    (make-snake (make-posn 5 4) "right")))
+
+(check-expect (move-snake (list (make-snake (make-posn 6 4) "right")
+                                (make-snake (make-posn 5 4) "right")
+                                (make-snake (make-posn 5 5) "right")))
+              (list (make-snake (make-posn 7 4) "right")
+                    (make-snake (make-posn 6 4) "right")
+                    (make-snake (make-posn 5 4) "right")))
 
 ;(define (move-snake snake) '())
 (define (move-snake snake)
-  (cond
-    [(empty? snake) '()]
-    [else
-     (cons (move-segment (first snake))
-           (move-snake (rest snake)))]))
+  (remove-segment (add-segment snake)))
 
+;; Snake -> Snake
+;; Add segment to fron of snake in (first snake) direction
+(check-expect (add-segment (list (make-snake (make-posn 4 4) "right") '()))
+              (list (make-snake (make-posn 5 4) "right") (make-snake (make-posn 4 4) "right") '()))
+(check-expect (add-segment (list (make-snake (make-posn 4 4) "right")
+                                 (make-snake (make-posn 3 4) "right") '()))
+              (list (make-snake (make-posn 5 4) "right")
+                    (make-snake (make-posn 4 4) "right")
+                    (make-snake (make-posn 3 4) "right") '()))
+
+;(define (add-segment snake) snake)
+(define (add-segment snake)
+  (append  (list (move-segment (first snake))
+                 (first snake))
+           (rest snake)))
+;; Snake -> Snake
+;; Remove last segment of snake
+(check-expect (remove-segment (list
+                               (make-snake (make-posn 5 4) "right")
+                               (make-snake (make-posn 4 4) "right")
+                               (make-snake (make-posn 3 4) "right")))
+              (list (make-snake (make-posn 5 4) "right")
+                    (make-snake (make-posn 4 4) "right")))
+;(define (remove-segment snake) snake)
+(define (remove-segment snake)
+  (cond
+    [(empty? (rest (rest snake)))
+     (list (first snake))]
+    [else
+     (append (list (first snake))
+           (remove-segment (rest snake)))]))
 ;; segment -> segment
 ;; move segment in space in direction
 ;; Assumption. not worrying about walls
